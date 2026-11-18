@@ -20,14 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['site_web'])) $erreurs[] = 'Envoi refusé.'; // piège anti-robots
     if ($v['nom'] === '') $erreurs[] = 'Merci d\'indiquer votre prénom et nom.';
     if (!preg_match('/^[0-9+\-\s().]{9,20}$/', $v['telephone'])) $erreurs[] = 'Le numéro de téléphone semble invalide.';
-    if ($v['teoudat_zeout'] !== '' && !tz_valide($v['teoudat_zeout'])) $erreurs[] = 'Le numéro de Teoudat Zeout est invalide (vérifiez les 9 chiffres).';
+    if ($v['teoudat_zeout'] === '') $erreurs[] = 'Merci d\'indiquer votre numéro de Teoudat Zeout.';
+    elseif (!tz_valide($v['teoudat_zeout'])) $erreurs[] = 'Le numéro de Teoudat Zeout est invalide (vérifiez les 9 chiffres).';
     if ($v['caisse'] !== '' && !in_array($v['caisse'], CAISSES, true)) $erreurs[] = 'Caisse maladie invalide.';
     if (mb_strlen($v['souhait']) > 3000 || mb_strlen($v['nom']) > 150 || mb_strlen($v['quartier']) > 150 || mb_strlen($v['date_alya']) > 50) {
         $erreurs[] = 'Un des champs est trop long.';
     }
 
     if (!$erreurs) {
-        if ($v['teoudat_zeout'] !== '') $v['teoudat_zeout'] = str_pad($v['teoudat_zeout'], 9, '0', STR_PAD_LEFT);
+        $v['teoudat_zeout'] = str_pad($v['teoudat_zeout'], 9, '0', STR_PAD_LEFT);
         $st = db()->prepare('INSERT INTO inscriptions (created_at,nom,telephone,date_alya,teoudat_zeout,quartier,caisse,activites,souhait,ip)
                              VALUES (?,?,?,?,?,?,?,?,?,?)');
         $st->execute([
@@ -96,8 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="champ"><label for="quartier">Quartier</label>
         <input id="quartier" name="quartier" maxlength="150" value="<?= h($v['quartier']) ?>"></div>
     </div>
-    <div class="champ"><label for="teoudat_zeout">Teoudat Zeout</label>
-      <input id="teoudat_zeout" name="teoudat_zeout" inputmode="numeric" maxlength="9" pattern="\d{5,9}" placeholder="9 chiffres" value="<?= h($v['teoudat_zeout']) ?>">
+    <div class="champ"><label for="teoudat_zeout">Teoudat Zeout <span class="obl">*</span></label>
+      <input id="teoudat_zeout" name="teoudat_zeout" required inputmode="numeric" maxlength="9" pattern="\d{5,9}" placeholder="9 chiffres" value="<?= h($v['teoudat_zeout']) ?>">
       <div class="aide" id="tz-aide"></div></div>
 
     <p style="margin:18px 0 4px"><strong>Votre caisse maladie :</strong></p>
