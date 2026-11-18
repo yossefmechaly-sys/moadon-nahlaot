@@ -1,0 +1,14 @@
+DirectoryIndex index.php
+Options -Indexes
+
+# Fichiers internes : jamais accessibles directement
+<FilesMatch "^(config|lib)\.php$|\.(sqlite|md)$">
+    Require all denied
+</FilesMatch>
+
+# Forcer HTTPS (données personnelles)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
