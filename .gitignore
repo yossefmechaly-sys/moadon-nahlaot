@@ -2,3 +2,5 @@ config.php
 data/
 *.sqlite
 .DS_Store
+*.bak-*
+moadon-data/
