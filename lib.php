@@ -61,8 +61,12 @@ function db(): PDO {
         caisse TEXT,
         activites TEXT,
         souhait TEXT,
-        ip TEXT
+        ip TEXT,
+        email TEXT
     )');
+    // Bases créées avant l'ajout du champ e-mail
+    $cols = array_column($pdo->query('PRAGMA table_info(inscriptions)')->fetchAll(), 'name');
+    if (!in_array('email', $cols, true)) $pdo->exec('ALTER TABLE inscriptions ADD COLUMN email TEXT');
     return $pdo;
 }
 

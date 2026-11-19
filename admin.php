@@ -35,7 +35,7 @@ if (empty($_SESSION['admin'])) {
         $err = 'Mot de passe incorrect.';
     }
     ?><!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex,nofollow"><title>Admin – Le Moadon</title><link rel="stylesheet" href="style.css?v=2"></head>
+    <meta name="robots" content="noindex,nofollow"><title>Admin – Le Moadon</title><link rel="stylesheet" href="style.css?v=3"></head>
     <body><div class="page" style="max-width:420px;margin-top:80px">
       <header><h1 style="font-size:2rem">Le Moadon</h1><div class="lieu">Espace administration</div></header>
       <?php if ($err): ?><div class="erreurs"><?= h($err) ?></div><?php endif; ?>
@@ -62,8 +62,8 @@ $q = trim($_GET['q'] ?? '');
 $filtreAct = $_GET['act'] ?? '';
 $where = []; $params = [];
 if ($q !== '') {
-    $where[] = '(nom LIKE ? OR telephone LIKE ? OR teoudat_zeout LIKE ? OR quartier LIKE ? OR souhait LIKE ?)';
-    array_push($params, ...array_fill(0, 5, "%$q%"));
+    $where[] = '(nom LIKE ? OR telephone LIKE ? OR email LIKE ? OR teoudat_zeout LIKE ? OR quartier LIKE ? OR souhait LIKE ?)';
+    array_push($params, ...array_fill(0, 6, "%$q%"));
 }
 if ($filtreAct !== '' && in_array($filtreAct, all_activites(), true)) {
     $noms = array_merge([$filtreAct], array_keys(ANCIENNES_ACTIVITES, $filtreAct, true));
@@ -81,11 +81,11 @@ if (isset($_GET['export'])) {
     $out = fopen('php://output', 'w');
     fwrite($out, "\xEF\xBB\xBF");
     $acts = all_activites();
-    fputcsv($out, array_merge(['N°','Date','Prénom et nom','Téléphone',"Date d'alya",'Teoudat Zeout','Quartier','Caisse maladie'], $acts, ['Souhait / idée']), ';');
+    fputcsv($out, array_merge(['N°','Date','Prénom et nom','Téléphone','E-mail',"Date d'alya",'Teoudat Zeout','Quartier','Caisse maladie'], $acts, ['Souhait / idée']), ';');
     foreach ($rows as $r) {
         $ra = activites_de($r['activites']);
         $cols = array_map(fn($a) => in_array($a, $ra, true) ? 'X' : '', $acts);
-        fputcsv($out, array_merge([$r['id'],$r['created_at'],$r['nom'],$r['telephone'],$r['date_alya'],$r['teoudat_zeout'],$r['quartier'],$r['caisse']], $cols, [$r['souhait']]), ';');
+        fputcsv($out, array_merge([$r['id'],$r['created_at'],$r['nom'],$r['telephone'],$r['email'],$r['date_alya'],$r['teoudat_zeout'],$r['quartier'],$r['caisse']], $cols, [$r['souhait']]), ';');
     }
     exit;
 }
@@ -101,7 +101,7 @@ $max = max(1, max($stats));
 ?><!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><title>Admin – Inscriptions Le Moadon</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 <style>
 .page{max-width:1200px}
 .barre{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -153,13 +153,14 @@ tr:hover td{background:#fff6f9}
   </div>
   <div class="scroll">
   <table>
-    <tr><th>#</th><th>Date</th><th>Nom</th><th>Téléphone</th><th>Alya</th><th>Teoudat Zeout</th><th>Quartier</th><th>Caisse</th><th>Activités</th><th>Souhait</th><th></th></tr>
+    <tr><th>#</th><th>Date</th><th>Nom</th><th>Téléphone</th><th>E-mail</th><th>Alya</th><th>Teoudat Zeout</th><th>Quartier</th><th>Caisse</th><th>Activités</th><th>Souhait</th><th></th></tr>
     <?php foreach ($rows as $r): ?>
       <tr>
         <td><?= (int)$r['id'] ?></td>
         <td style="white-space:nowrap"><?= h(substr($r['created_at'], 0, 16)) ?></td>
         <td><strong><?= h($r['nom']) ?></strong></td>
         <td style="white-space:nowrap"><a href="tel:<?= h($r['telephone']) ?>"><?= h($r['telephone']) ?></a></td>
+        <td><?php if ($r['email']): ?><a href="mailto:<?= h($r['email']) ?>"><?= h($r['email']) ?></a><?php endif; ?></td>
         <td><?= h($r['date_alya']) ?></td>
         <td><?= h($r['teoudat_zeout']) ?></td>
         <td><?= h($r['quartier']) ?></td>
@@ -171,7 +172,7 @@ tr:hover td{background:#fff6f9}
           <button class="del" name="delete" value="<?= (int)$r['id'] ?>" title="Supprimer">🗑</button></form></td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$rows): ?><tr><td colspan="11" style="text-align:center;color:#888;padding:30px">Aucune inscription pour le moment.</td></tr><?php endif; ?>
+    <?php if (!$rows): ?><tr><td colspan="12" style="text-align:center;color:#888;padding:30px">Aucune inscription pour le moment.</td></tr><?php endif; ?>
   </table>
   </div>
 </div></body></html>

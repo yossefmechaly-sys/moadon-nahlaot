@@ -6,11 +6,11 @@ header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
 
 $erreurs = [];
-$v = ['nom'=>'','telephone'=>'','date_alya'=>'','teoudat_zeout'=>'','quartier'=>'','caisse'=>'','activites'=>[],'souhait'=>''];
+$v = ['nom'=>'','telephone'=>'','date_alya'=>'','teoudat_zeout'=>'','email'=>'','quartier'=>'','caisse'=>'','activites'=>[],'souhait'=>''];
 $ok = isset($_GET['merci']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    foreach (['nom','telephone','date_alya','teoudat_zeout','quartier','caisse','souhait'] as $k) {
+    foreach (['nom','telephone','date_alya','teoudat_zeout','email','quartier','caisse','souhait'] as $k) {
         $v[$k] = trim((string)($_POST[$k] ?? ''));
     }
     $v['activites'] = array_values(array_intersect(all_activites(), (array)($_POST['activites'] ?? [])));
@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($v['nom'] === '') $erreurs[] = 'Merci d\'indiquer votre prénom et nom.';
     if (!preg_match('/^[0-9+\-\s().]{9,20}$/', $v['telephone'])) $erreurs[] = 'Le numéro de téléphone semble invalide.';
     if ($v['teoudat_zeout'] !== '' && !tz_valide($v['teoudat_zeout'])) $erreurs[] = 'Le numéro de Teoudat Zeout est invalide (vérifiez les 9 chiffres).';
+    if ($v['email'] !== '' && (mb_strlen($v['email']) > 150 || !filter_var($v['email'], FILTER_VALIDATE_EMAIL))) $erreurs[] = 'L\'adresse e-mail semble invalide.';
     if ($v['caisse'] !== '' && !in_array($v['caisse'], CAISSES, true)) $erreurs[] = 'Caisse maladie invalide.';
     if (mb_strlen($v['souhait']) > 3000 || mb_strlen($v['nom']) > 150 || mb_strlen($v['quartier']) > 150 || mb_strlen($v['date_alya']) > 50) {
         $erreurs[] = 'Un des champs est trop long.';
@@ -28,11 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$erreurs) {
         if ($v['teoudat_zeout'] !== '') $v['teoudat_zeout'] = str_pad($v['teoudat_zeout'], 9, '0', STR_PAD_LEFT);
-        $st = db()->prepare('INSERT INTO inscriptions (created_at,nom,telephone,date_alya,teoudat_zeout,quartier,caisse,activites,souhait,ip)
-                             VALUES (?,?,?,?,?,?,?,?,?,?)');
+        $st = db()->prepare('INSERT INTO inscriptions (created_at,nom,telephone,date_alya,teoudat_zeout,email,quartier,caisse,activites,souhait,ip)
+                             VALUES (?,?,?,?,?,?,?,?,?,?,?)');
         $st->execute([
             (new DateTime('now', new DateTimeZone('Asia/Jerusalem')))->format('Y-m-d H:i:s'),
-            $v['nom'], $v['telephone'], $v['date_alya'], $v['teoudat_zeout'], $v['quartier'],
+            $v['nom'], $v['telephone'], $v['date_alya'], $v['teoudat_zeout'], $v['email'], $v['quartier'],
             $v['caisse'], json_encode($v['activites'], JSON_UNESCAPED_UNICODE), $v['souhait'],
             $_SERVER['REMOTE_ADDR'] ?? '',
         ]);
@@ -52,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fiche d'inscription – Le Moadon Femmes Francophones Nahlaot</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div class="page">
@@ -92,13 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input id="date_alya" name="date_alya" maxlength="50" placeholder="ex. 2015" value="<?= h($v['date_alya']) ?>"></div>
     </div>
     <div class="deux">
-      <div>
-        <div class="champ"><label for="quartier">Quartier</label>
-          <input id="quartier" name="quartier" maxlength="150" value="<?= h($v['quartier']) ?>"></div>
-        <div class="champ"><label for="teoudat_zeout">Teoudat Zeout</label>
-          <input id="teoudat_zeout" name="teoudat_zeout" inputmode="numeric" maxlength="9" pattern="\d{5,9}" placeholder="9 chiffres" value="<?= h($v['teoudat_zeout']) ?>">
-          <div class="aide" id="tz-aide"></div></div>
-      </div>
+      <div class="champ"><label for="quartier">Quartier</label>
+        <input id="quartier" name="quartier" maxlength="150" value="<?= h($v['quartier']) ?>"></div>
       <fieldset class="caisse"><legend>Votre caisse maladie :</legend>
         <div class="grille">
           <?php foreach (CAISSES as $c): ?>
@@ -106,6 +102,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <?php endforeach; ?>
         </div>
       </fieldset>
+    </div>
+    <div class="deux">
+      <div class="champ"><label for="teoudat_zeout">Teoudat Zeout</label>
+        <input id="teoudat_zeout" name="teoudat_zeout" inputmode="numeric" maxlength="9" pattern="\d{5,9}" placeholder="9 chiffres" value="<?= h($v['teoudat_zeout']) ?>">
+        <div class="aide" id="tz-aide"></div></div>
+      <div class="champ"><label for="email">E-mail</label>
+        <input id="email" name="email" type="email" maxlength="150" autocomplete="email" inputmode="email" placeholder="nom@exemple.com" value="<?= h($v['email']) ?>"></div>
     </div>
 
     <h2>2.&nbsp; Quelles activités vous intéressent ?</h2>

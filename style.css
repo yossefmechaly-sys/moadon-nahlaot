@@ -24,6 +24,7 @@ h3{color:var(--rose);font-size:.95rem;text-transform:uppercase;margin:20px 0 6px
 .champ input:focus,.champ textarea:focus{border-color:var(--rose)}
 .deux{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
 fieldset{border:none;margin:0;padding:0;min-width:0}
+.caisse{margin-bottom:14px}
 .caisse legend{font-weight:700;padding:0;margin-bottom:4px}
 .caisse .grille{gap:0 20px}
 .consigne{margin:0 0 10px}
