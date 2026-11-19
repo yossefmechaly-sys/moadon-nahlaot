@@ -4,27 +4,28 @@ require __DIR__ . '/config.php';
 
 const CAISSES = ['Maccabi', 'Clalit', 'Meuhedet', 'Leumit'];
 
+// Deux colonnes : les 3 premiers groupes à gauche, les 3 suivants à droite
 const ACTIVITES = [
-    'Activités' => [
-        'Gymnastique',
-        'Yoga',
-        'Chant en groupe',
-        'Bridge et jeux de société',
-        'Danses folkloriques israéliennes',
-        'Compétences numériques',
-        "Cours d'hébreu (Oulpan)",
-        'Conférences (Bible, anglais, arabe, médecine, nutrition, etc.)',
-        'Entraînement de la mémoire',
-        'Visites guidées et excursions',
-    ],
-    'Arts & créativité' => [
-        'Sculpture',
-        "Peinture à l'huile",
-        'Création de bijoux',
-        'Dessin / peinture',
-        'Pâtisserie',
-    ],
+    'Expression et scène' => ['Chorale', 'Théâtre', 'Atelier du rire', 'Prise de parole en public', 'Chant en groupe'],
+    'Nature et fleurs' => ['Composition florale', 'Jardinage'],
+    'Activités manuelles' => ['Peinture sur soie et verre', 'Dessin et aquarelle', 'Calligraphie', 'Sculpture', "Peinture à l'huile", 'Création de bijoux'],
+    'Sport et bien-être' => ['Yoga', 'Tai chi', 'Gymnastique', 'Entraînement de la mémoire'],
+    'Conférences et ateliers' => ['Naturopathie et alimentation', 'Pâtisserie', 'Conférences', 'Bible, anglais, arabe, médecine, nutrition'],
+    'Culture israélienne' => ['Danse folklorique', 'Histoire juive ancienne et moderne', 'Bridge et jeux de société', 'Visites guidées et excursions', 'Compétences numériques', "Cours d'hébreu (Oulpan)"],
 ];
+
+// Anciens intitulés (fiches déjà enregistrées) => nouveaux intitulés
+const ANCIENNES_ACTIVITES = [
+    'Danses folkloriques israéliennes' => 'Danse folklorique',
+    'Conférences (Bible, anglais, arabe, médecine, nutrition, etc.)' => 'Bible, anglais, arabe, médecine, nutrition',
+    'Dessin / peinture' => 'Dessin et aquarelle',
+];
+
+// Activités d'une fiche enregistrée, avec les anciens intitulés convertis
+function activites_de(?string $json): array {
+    $a = json_decode($json ?: '[]', true) ?: [];
+    return array_values(array_unique(array_map(fn($x) => ANCIENNES_ACTIVITES[$x] ?? $x, $a)));
+}
 
 function all_activites(): array {
     return array_merge(...array_values(ACTIVITES));

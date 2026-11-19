@@ -20,15 +20,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['site_web'])) $erreurs[] = 'Envoi refusé.'; // piège anti-robots
     if ($v['nom'] === '') $erreurs[] = 'Merci d\'indiquer votre prénom et nom.';
     if (!preg_match('/^[0-9+\-\s().]{9,20}$/', $v['telephone'])) $erreurs[] = 'Le numéro de téléphone semble invalide.';
-    if ($v['teoudat_zeout'] === '') $erreurs[] = 'Merci d\'indiquer votre numéro de Teoudat Zeout.';
-    elseif (!tz_valide($v['teoudat_zeout'])) $erreurs[] = 'Le numéro de Teoudat Zeout est invalide (vérifiez les 9 chiffres).';
+    if ($v['teoudat_zeout'] !== '' && !tz_valide($v['teoudat_zeout'])) $erreurs[] = 'Le numéro de Teoudat Zeout est invalide (vérifiez les 9 chiffres).';
     if ($v['caisse'] !== '' && !in_array($v['caisse'], CAISSES, true)) $erreurs[] = 'Caisse maladie invalide.';
     if (mb_strlen($v['souhait']) > 3000 || mb_strlen($v['nom']) > 150 || mb_strlen($v['quartier']) > 150 || mb_strlen($v['date_alya']) > 50) {
         $erreurs[] = 'Un des champs est trop long.';
     }
 
     if (!$erreurs) {
-        $v['teoudat_zeout'] = str_pad($v['teoudat_zeout'], 9, '0', STR_PAD_LEFT);
+        if ($v['teoudat_zeout'] !== '') $v['teoudat_zeout'] = str_pad($v['teoudat_zeout'], 9, '0', STR_PAD_LEFT);
         $st = db()->prepare('INSERT INTO inscriptions (created_at,nom,telephone,date_alya,teoudat_zeout,quartier,caisse,activites,souhait,ip)
                              VALUES (?,?,?,?,?,?,?,?,?,?)');
         $st->execute([
@@ -53,16 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fiche d'inscription – Le Moadon Femmes Francophones Nahlaot</title>
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 <div class="page">
-  <?= flowers_svg('f-tl') . flowers_svg('f-tr') . flowers_svg('f-bl') . flowers_svg('f-br') ?>
   <header>
     <h1>Le Moadon</h1>
-    <div class="sous-titre">Femmes Francophones &nbsp;•&nbsp; Nahlaot</div>
-    <div class="lieu">Centre Wiener &nbsp;•&nbsp; Jérusalem</div>
-    <div class="bandeau">FICHE D'INSCRIPTION ✿</div>
+    <div class="sous-titre">Femmes Francophones <span>•</span> Nahlaot <span>•</span> Centre Wiener <span>•</span> Jérusalem</div>
+    <div class="bandeau">FICHE D'INSCRIPTION</div>
   </header>
 
 <?php if ($ok): ?>
@@ -74,8 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 <?php else: ?>
   <div class="intro">
-    <b>Bonjour !</b>
-    <p>Afin de développer les activités pour les femmes francophones du centre-ville de Jérusalem, nous aimerions mieux connaître vos envies.</p>
+    <p>Bonjour ! Afin de développer les activités pour les femmes francophones du centre-ville de Jérusalem, nous aimerions mieux connaître vos envies.</p>
   </div>
 
   <?php if ($erreurs): ?>
@@ -89,35 +85,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h2>1.&nbsp; Vos coordonnées</h2>
     <div class="champ"><label for="nom">Prénom et nom <span class="obl">*</span></label>
       <input id="nom" name="nom" required maxlength="150" autocomplete="name" value="<?= h($v['nom']) ?>"></div>
-    <div class="champ"><label for="telephone">Téléphone portable <span class="obl">*</span></label>
-      <input id="telephone" name="telephone" type="tel" required inputmode="tel" autocomplete="tel" placeholder="05X-XXX-XXXX" value="<?= h($v['telephone']) ?>"></div>
     <div class="deux">
+      <div class="champ"><label for="telephone">Téléphone portable <span class="obl">*</span></label>
+        <input id="telephone" name="telephone" type="tel" required inputmode="tel" autocomplete="tel" placeholder="05X-XXX-XXXX" value="<?= h($v['telephone']) ?>"></div>
       <div class="champ"><label for="date_alya">Date d'alya</label>
         <input id="date_alya" name="date_alya" maxlength="50" placeholder="ex. 2015" value="<?= h($v['date_alya']) ?>"></div>
-      <div class="champ"><label for="quartier">Quartier</label>
-        <input id="quartier" name="quartier" maxlength="150" value="<?= h($v['quartier']) ?>"></div>
     </div>
-    <div class="champ"><label for="teoudat_zeout">Teoudat Zeout <span class="obl">*</span></label>
-      <input id="teoudat_zeout" name="teoudat_zeout" required inputmode="numeric" maxlength="9" pattern="\d{5,9}" placeholder="9 chiffres" value="<?= h($v['teoudat_zeout']) ?>">
-      <div class="aide" id="tz-aide"></div></div>
-
-    <p style="margin:18px 0 4px"><strong>Votre caisse maladie :</strong></p>
-    <div class="grille" style="max-width:360px">
-      <?php foreach (CAISSES as $c): ?>
-        <label class="check"><input type="radio" name="caisse" value="<?= h($c) ?>" <?= $v['caisse'] === $c ? 'checked' : '' ?>> <?= h($c) ?></label>
-      <?php endforeach; ?>
+    <div class="deux">
+      <div>
+        <div class="champ"><label for="quartier">Quartier</label>
+          <input id="quartier" name="quartier" maxlength="150" value="<?= h($v['quartier']) ?>"></div>
+        <div class="champ"><label for="teoudat_zeout">Teoudat Zeout</label>
+          <input id="teoudat_zeout" name="teoudat_zeout" inputmode="numeric" maxlength="9" pattern="\d{5,9}" placeholder="9 chiffres" value="<?= h($v['teoudat_zeout']) ?>">
+          <div class="aide" id="tz-aide"></div></div>
+      </div>
+      <fieldset class="caisse"><legend>Votre caisse maladie :</legend>
+        <div class="grille">
+          <?php foreach (CAISSES as $c): ?>
+            <label class="check"><input type="radio" name="caisse" value="<?= h($c) ?>" <?= $v['caisse'] === $c ? 'checked' : '' ?>> <?= h($c) ?></label>
+          <?php endforeach; ?>
+        </div>
+      </fieldset>
     </div>
 
     <h2>2.&nbsp; Quelles activités vous intéressent ?</h2>
-    <p class="aide" style="font-size:.95rem">Cochez toutes les activités qui vous intéressent.</p>
-    <?php foreach (ACTIVITES as $groupe => $liste): ?>
-      <?php if ($groupe !== 'Activités'): ?><h3><?= h($groupe) ?></h3><?php endif; ?>
-      <div class="grille">
-        <?php foreach ($liste as $a): ?>
-          <label class="check"><input type="checkbox" name="activites[]" value="<?= h($a) ?>" <?= in_array($a, $v['activites'], true) ? 'checked' : '' ?>> <?= h($a) ?></label>
-        <?php endforeach; ?>
-      </div>
-    <?php endforeach; ?>
+    <p class="consigne">Cochez toutes les activités qui vous intéressent.</p>
+    <div class="activites">
+      <?php foreach (array_chunk(ACTIVITES, 3, true) as $colonne): ?>
+        <div class="colonne">
+          <?php foreach ($colonne as $groupe => $liste): ?>
+            <fieldset class="groupe"><legend><?= h($groupe) ?></legend>
+              <?php foreach ($liste as $a): ?>
+                <label class="check"><input type="checkbox" name="activites[]" value="<?= h($a) ?>" <?= in_array($a, $v['activites'], true) ? 'checked' : '' ?>> <?= h($a) ?></label>
+              <?php endforeach; ?>
+            </fieldset>
+          <?php endforeach; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
 
     <h2>3.&nbsp; Un souhait ou une idée à partager ?</h2>
     <div class="champ"><label for="souhait">Une autre activité que vous aimeriez retrouver au centre communautaire ?</label>
@@ -128,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endif; ?>
 
   <footer>
-    <div class="merci">MERCI POUR VOTRE PARTICIPATION ! ♥</div>
+    <div class="merci">MERCI POUR VOTRE PARTICIPATION !</div>
     <small>Le Moadon Femmes Francophones Nahlaot</small>
   </footer>
 </div>

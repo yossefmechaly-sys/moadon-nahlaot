@@ -35,7 +35,7 @@ if (empty($_SESSION['admin'])) {
         $err = 'Mot de passe incorrect.';
     }
     ?><!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex,nofollow"><title>Admin – Le Moadon</title><link rel="stylesheet" href="style.css?v=1"></head>
+    <meta name="robots" content="noindex,nofollow"><title>Admin – Le Moadon</title><link rel="stylesheet" href="style.css?v=2"></head>
     <body><div class="page" style="max-width:420px;margin-top:80px">
       <header><h1 style="font-size:2rem">Le Moadon</h1><div class="lieu">Espace administration</div></header>
       <?php if ($err): ?><div class="erreurs"><?= h($err) ?></div><?php endif; ?>
@@ -66,8 +66,9 @@ if ($q !== '') {
     array_push($params, ...array_fill(0, 5, "%$q%"));
 }
 if ($filtreAct !== '' && in_array($filtreAct, all_activites(), true)) {
-    $where[] = 'activites LIKE ?';
-    $params[] = '%' . json_encode($filtreAct, JSON_UNESCAPED_UNICODE) . '%';
+    $noms = array_merge([$filtreAct], array_keys(ANCIENNES_ACTIVITES, $filtreAct, true));
+    $where[] = '(' . implode(' OR ', array_fill(0, count($noms), 'activites LIKE ?')) . ')';
+    foreach ($noms as $n) $params[] = '%' . json_encode($n, JSON_UNESCAPED_UNICODE) . '%';
 }
 $sql = 'SELECT * FROM inscriptions' . ($where ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY id DESC';
 $st = $pdo->prepare($sql); $st->execute($params);
@@ -82,7 +83,7 @@ if (isset($_GET['export'])) {
     $acts = all_activites();
     fputcsv($out, array_merge(['N°','Date','Prénom et nom','Téléphone',"Date d'alya",'Teoudat Zeout','Quartier','Caisse maladie'], $acts, ['Souhait / idée']), ';');
     foreach ($rows as $r) {
-        $ra = json_decode($r['activites'] ?: '[]', true) ?: [];
+        $ra = activites_de($r['activites']);
         $cols = array_map(fn($a) => in_array($a, $ra, true) ? 'X' : '', $acts);
         fputcsv($out, array_merge([$r['id'],$r['created_at'],$r['nom'],$r['telephone'],$r['date_alya'],$r['teoudat_zeout'],$r['quartier'],$r['caisse']], $cols, [$r['souhait']]), ';');
     }
@@ -93,14 +94,14 @@ if (isset($_GET['export'])) {
 $total = (int)$pdo->query('SELECT COUNT(*) FROM inscriptions')->fetchColumn();
 $stats = array_fill_keys(all_activites(), 0);
 foreach ($pdo->query('SELECT activites FROM inscriptions') as $r) {
-    foreach (json_decode($r['activites'] ?: '[]', true) ?: [] as $a) if (isset($stats[$a])) $stats[$a]++;
+    foreach (activites_de($r['activites']) as $a) if (isset($stats[$a])) $stats[$a]++;
 }
 arsort($stats);
 $max = max(1, max($stats));
 ?><!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><title>Admin – Inscriptions Le Moadon</title>
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 <style>
 .page{max-width:1200px}
 .barre{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -163,7 +164,7 @@ tr:hover td{background:#fff6f9}
         <td><?= h($r['teoudat_zeout']) ?></td>
         <td><?= h($r['quartier']) ?></td>
         <td><?= h($r['caisse']) ?></td>
-        <td class="tags"><?php foreach (json_decode($r['activites'] ?: '[]', true) ?: [] as $a) echo '<span>' . h($a) . '</span>'; ?></td>
+        <td class="tags"><?php foreach (activites_de($r['activites']) as $a) echo '<span>' . h($a) . '</span>'; ?></td>
         <td><?= nl2br(h($r['souhait'])) ?></td>
         <td><form method="post" onsubmit="return confirm('Supprimer l\'inscription de <?= h(addslashes($r['nom'])) ?> ?')">
           <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf']) ?>">
