@@ -4,30 +4,67 @@ require __DIR__ . '/config.php';
 
 const CAISSES = ['Maccabi', 'Clalit', 'Meuhedet', 'Leumit'];
 
-const ACTIVITES = [
-    'Activités' => [
-        'Gymnastique',
-        'Yoga',
+// Groupes d'activités, dans l'ordre d'affichage : colonne de gauche puis colonne de droite
+const ACTIVITES_GAUCHE = [
+    'Expression et scène' => [
+        'Chorale',
+        'Théâtre',
+        'Atelier du rire',
+        'Prise de parole en public',
         'Chant en groupe',
-        'Bridge et jeux de société',
-        'Danses folkloriques israéliennes',
-        'Compétences numériques',
-        "Cours d'hébreu (Oulpan)",
-        'Conférences (Bible, anglais, arabe, médecine, nutrition, etc.)',
-        'Entraînement de la mémoire',
-        'Visites guidées et excursions',
     ],
-    'Arts & créativité' => [
+    'Nature et fleurs' => [
+        'Composition florale',
+        'Jardinage',
+    ],
+    'Activités manuelles' => [
+        'Peinture sur soie et verre',
+        'Dessin et aquarelle',
+        'Calligraphie',
         'Sculpture',
         "Peinture à l'huile",
         'Création de bijoux',
-        'Dessin / peinture',
-        'Pâtisserie',
     ],
+];
+const ACTIVITES_DROITE = [
+    'Sport et bien-être' => [
+        'Yoga',
+        'Tai chi',
+        'Gymnastique',
+        'Entraînement de la mémoire',
+    ],
+    'Conférences et ateliers' => [
+        'Naturopathie et alimentation',
+        'Pâtisserie',
+        'Conférences',
+        'Bible, anglais, arabe, médecine, nutrition',
+    ],
+    'Culture israélienne' => [
+        'Danse folklorique',
+        'Histoire juive ancienne et moderne',
+        'Bridge et jeux de société',
+        'Visites guidées et excursions',
+        'Compétences numériques',
+        "Cours d'hébreu (Oulpan)",
+    ],
+];
+const ACTIVITES = ACTIVITES_GAUCHE + ACTIVITES_DROITE;
+
+// Anciens intitulés (première version du formulaire) => intitulé actuel
+const ACTIVITES_ANCIENNES = [
+    'Danses folkloriques israéliennes' => 'Danse folklorique',
+    'Dessin / peinture' => 'Dessin et aquarelle',
+    'Conférences (Bible, anglais, arabe, médecine, nutrition, etc.)' => 'Bible, anglais, arabe, médecine, nutrition',
 ];
 
 function all_activites(): array {
     return array_merge(...array_values(ACTIVITES));
+}
+
+// Activités d'une inscription, avec les anciens intitulés convertis
+function activites_de(?string $json): array {
+    $l = json_decode($json ?: '[]', true) ?: [];
+    return array_values(array_unique(array_map(fn($a) => ACTIVITES_ANCIENNES[$a] ?? $a, $l)));
 }
 
 function h($s): string {
@@ -62,6 +99,9 @@ function db(): PDO {
         souhait TEXT,
         ip TEXT
     )');
+    // Migration : colonne email ajoutée le 19/11/2026
+    $cols = array_column($pdo->query('PRAGMA table_info(inscriptions)')->fetchAll(), 'name');
+    if (!in_array('email', $cols, true)) $pdo->exec('ALTER TABLE inscriptions ADD COLUMN email TEXT');
     return $pdo;
 }
 
